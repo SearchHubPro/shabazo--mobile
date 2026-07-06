@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>写バ像 - 現場撮影</title>
     
-    <!-- ホーム画面アイコン設定 -->
     <link rel="apple-touch-icon" href="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png">
     <link rel="icon" type="image/png" href="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,100 +14,48 @@
     <style>
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background: #000; 
-            color: #fff; 
-            margin: 0; 
-            overflow: hidden; 
-            touch-action: none;
-            width: 100vw;
-            height: 100vh;
+            background: #000; color: #fff; margin: 0; overflow: hidden; touch-action: none;
+            width: 100vw; height: 100vh;
         }
         
-        /* 全画面カメラ領域（縦持ち固定のまま使用） */
+        /* 💡 修正1: 映像を歪ませない（object-fit: contain で本来の比率を維持して中央配置） */
         #camera-container { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100vw; 
-            height: 100vh; 
-            background: #000; 
-            z-index: 1; 
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: #000; z-index: 1; 
+            display: flex; justify-content: center; align-items: center;
         }
         #video { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
+            max-width: 100%; max-height: 100%; object-fit: contain; 
         }
         
-        /* 撮影ボタン：画面上部中央に配置（スマホを右に90度倒した時に「右端真ん中」にくる） */
+        /* 撮影ボタン：画面上部中央 */
         #btn-capture { 
-            position: absolute; 
-            top: 30px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: 76px; 
-            height: 76px; 
-            background: rgba(255,255,255,0.3); 
-            border: 4px solid white; 
-            border-radius: 50%; 
-            z-index: 20; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            cursor: pointer; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.8); 
-            backdrop-filter: blur(2px); 
+            position: absolute; top: 30px; left: 50%; transform: translateX(-50%); 
+            width: 76px; height: 76px; background: rgba(255,255,255,0.3); 
+            border: 4px solid white; border-radius: 50%; z-index: 20; 
+            display: flex; justify-content: center; align-items: center; cursor: pointer; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.8); backdrop-filter: blur(2px); 
         }
-        #btn-capture .inner-circle { 
-            width: 60px; 
-            height: 60px; 
-            background: white; 
-            border-radius: 50%; 
-        }
-        #btn-capture:active .inner-circle { 
-            background: #e53e3e; 
-            transform: scale(0.9); 
-        }
+        #btn-capture .inner-circle { width: 60px; height: 60px; background: white; border-radius: 50%; }
+        #btn-capture:active .inner-circle { background: #e53e3e; transform: scale(0.9); }
 
-        /* 歯車ボタン（設定）：画面右下に配置（スマホを右に90度倒した時に「左下」にくる） */
+        /* 歯車ボタン：画面右下 */
         #btn-settings { 
-            position: absolute; 
-            bottom: 30px; 
-            right: 30px; 
-            width: 50px; 
-            height: 50px; 
-            background: rgba(0,0,0,0.6); 
-            color: white; 
-            border: 2px solid rgba(255,255,255,0.8); 
-            border-radius: 50%; 
-            font-size: 24px; 
-            z-index: 20; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            cursor: pointer; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
-            backdrop-filter: blur(4px); 
+            position: absolute; bottom: 30px; right: 30px; 
+            width: 50px; height: 50px; background: rgba(0,0,0,0.6); color: white; 
+            border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; font-size: 24px; 
+            z-index: 20; display: flex; justify-content: center; align-items: center; 
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); backdrop-filter: blur(4px); 
         }
         
-        /* プレビュー用看板：最初から「反時計回りに90度回転」して配置（スマホを右に90度倒すと水平に見える） */
+        /* プレビュー看板：固定サイズで-90度回転 */
         #preview-board { 
-            position: absolute; 
-            top: 50%; 
-            left: 30px; 
-            transform: translateY(-50%) rotate(-90deg); 
-            transform-origin: center center;
-            width: 320px; 
-            padding: 12px; 
-            box-sizing: border-box; 
-            border: 3px solid; 
-            border-radius: 4px; 
-            box-shadow: 3px 3px 12px rgba(0,0,0,0.8); 
-            z-index: 10; 
-            cursor: grab; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
+            position: absolute; top: 50%; left: 30px; 
+            width: 320px; height: 130px; margin-top: -65px; /* 中央揃え用 */
+            padding: 12px; box-sizing: border-box; 
+            border: 3px solid; border-radius: 4px; box-shadow: 3px 3px 12px rgba(0,0,0,0.8); 
+            z-index: 10; cursor: grab; display: flex; flex-direction: column; justify-content: center; 
+            transform: translate(0px, 0px) rotate(-90deg); /* 💡 移動はtranslateで行う */
         }
         #preview-board:active { cursor: grabbing; }
         
@@ -122,41 +69,20 @@
         .board-label { width: 40px; flex-shrink: 0; opacity: 0.9; font-size: 12px; }
         .board-val { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; padding-left: 5px;}
         
-        /* 設定・確認モーダル */
+        /* モーダル群 */
         #settings-modal, #confirm-modal { 
-            display: none; 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100vw; 
-            height: 100vh; 
-            background: rgba(0,0,0,0.9); 
-            z-index: 100; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            padding: 20px; 
-            box-sizing: border-box; 
-            backdrop-filter: blur(5px); 
+            display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; justify-content: center; align-items: center; 
+            padding: 20px; box-sizing: border-box; backdrop-filter: blur(5px); 
         }
-        .modal-content { 
-            background: #222; 
-            width: 100%; 
-            max-width: 400px; 
-            border-radius: 16px; 
-            padding: 24px; 
-            box-sizing: border-box; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
-        }
+        .modal-content { background: #222; width: 100%; max-width: 400px; border-radius: 16px; padding: 24px; box-sizing: border-box; }
         .modal-content h3 { margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid #4a5568; padding-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 10px; }
         .modal-content h3 img { width: 24px; height: 24px; border-radius: 6px; }
         
         label { display: block; font-size: 13px; color: #a0aec0; margin-bottom: 6px; font-weight: bold; }
         input, select { width: 100%; padding: 12px; border: 1px solid #4a5568; border-radius: 8px; font-size: 15px; background: #333; color: #fff; box-sizing: border-box; margin-bottom: 16px; font-weight: bold; }
-        
         .btn-modal { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; background: #3182ce; color: white; display: flex; justify-content: center; gap: 8px; }
         
-        /* 確認画面用（写真は自動で横向き1920x1080に変換されるため縦画面では横長表示になる） */
         #confirm-img { width: 100%; max-height: 55vh; object-fit: contain; margin-bottom: 10px; border-radius: 8px; border: 2px solid #4a5568; }
         .confirm-actions { display: flex; gap: 12px; width: 100%; max-width: 400px; }
         .btn-half { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; display: flex; justify-content: center; align-items: center; gap: 8px; }
@@ -169,7 +95,6 @@
 <div id="camera-container">
     <video id="video" autoplay playsinline></video>
     
-    <!-- 縦固定画面のまま、あらかじめ90度左に傾けておく看板 -->
     <div id="preview-board" class="board-green">
         <div class="board-row"><div class="board-label">現場</div><div class="board-val" id="prev-site">-</div></div>
         <div class="board-row"><div class="board-label">工種</div><div class="board-val" id="prev-process">-</div></div>
@@ -177,19 +102,14 @@
     </div>
 </div>
 
-<div class="top-info"><img src="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png" style="width:14px; vertical-align:middle; margin-right:5px; border-radius:3px;">写バ像 v1.5</div>
+<div class="top-info"><img src="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png" style="width:14px; vertical-align:middle; margin-right:5px; border-radius:3px;">写バ像 v2.0</div>
 
-<!-- 撮影ボタン：上部中央（横持ち時に右端真ん中になる） -->
 <div id="btn-capture" onclick="takePhoto()"><div class="inner-circle"></div></div>
-
-<!-- 歯車ボタン：右下（横持ち時に左下になる） -->
 <div id="btn-settings" onclick="openSettings()"><i class="fas fa-cog"></i></div>
 
-<!-- 設定画面 -->
 <div id="settings-modal">
     <div class="modal-content">
         <h3><img src="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png" alt="icon"> 看板設定</h3>
-        
         <div style="display: flex; gap: 10px;">
             <div style="flex: 1;">
                 <label>デジタル看板</label>
@@ -206,29 +126,18 @@
                 </select>
             </div>
         </div>
-
-        <label>現場名</label>
-        <input type="text" id="inputSite" placeholder="例: ○○邸 新築工事" oninput="updatePreview()">
-        
-        <label>撮影箇所・工種</label>
-        <input type="text" id="inputProcess" placeholder="例: 基礎配筋検査" oninput="updatePreview()">
-        
+        <label>現場名</label><input type="text" id="inputSite" placeholder="例: ○○邸 新築工事" oninput="updatePreview()">
+        <label>撮影箇所・工種</label><input type="text" id="inputProcess" placeholder="例: 基礎配筋検査" oninput="updatePreview()">
         <button class="btn-modal" onclick="closeSettings()"><i class="fas fa-check"></i> 撮影に戻る</button>
-        <p style="font-size: 11px; color:#a0aec0; text-align:center; margin-top:12px;">※スマホを右に寝かせて構えてください<br>※看板は指で自由に位置を動かせます</p>
     </div>
 </div>
 
-<!-- 撮影後の確認画面 -->
 <div id="confirm-modal">
     <div style="color: white; font-weight: bold; margin-bottom: 10px; font-size: 16px; text-align: center;">📸 撮影確認 (写真は自動で横型になります)</div>
-    
-    <!-- 撮影した横向き写真がここに表示される -->
     <img id="confirm-img" src="" alt="撮影画像">
-    
     <p id="ios-notice" style="font-size:12px; color:#f6ad55; text-align:center; margin: 0 0 15px 0; font-weight:bold; display:none;">
-        ⚠️ 共有メニューが開いたら「画像を保存」を選ぶとカメラロールに入ります！<br>(または画像を長押しでも保存できます)
+        ⚠️ 共有メニューが開いたら「画像を保存」を選ぶとカメラロールに入ります！
     </p>
-    
     <div class="confirm-actions">
         <button class="btn-half" style="background: #4a5568;" onclick="cancelPhoto()"><i class="fas fa-redo"></i> 撮り直す</button>
         <button class="btn-half" style="background: #3182ce;" onclick="savePhoto()"><i class="fas fa-share-alt"></i> 保存する</button>
@@ -238,79 +147,52 @@
 <script>
     const video = document.getElementById('video');
     const previewBoard = document.getElementById('preview-board');
-    let currentStream = null;
-    let capturedBlob = null;
-    let capturedDataUrl = null;
+    let currentStream = null, capturedBlob = null, capturedDataUrl = null;
+    let translateX = 0, translateY = 0; // ドラッグ座標用
 
     document.addEventListener('DOMContentLoaded', () => {
         const today = new Date();
-        const dateStr = today.getFullYear() + '/' + String(today.getMonth() + 1).padStart(2, '0') + '/' + String(today.getDate()).padStart(2, '0');
-        document.getElementById('prev-date').innerText = dateStr;
-        
-        // iPhoneのブラウザ仕様に合わせて長押し・共有案内用の判定
-        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            document.getElementById('ios-notice').style.display = 'block';
-        }
-        
-        startCamera();
-        setupDraggableBoard();
+        document.getElementById('prev-date').innerText = today.getFullYear() + '/' + String(today.getMonth() + 1).padStart(2, '0') + '/' + String(today.getDate()).padStart(2, '0');
+        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) document.getElementById('ios-notice').style.display = 'block';
+        startCamera(); setupDraggableBoard();
     });
 
     async function startCamera() {
-        if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
+        if (currentStream) currentStream.getTracks().forEach(track => track.stop());
         try {
             currentStream = await navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false 
             });
             video.srcObject = currentStream;
-        } catch (err) { alert('カメラの起動に失敗しました。ブラウザのカメラ権限を許可してください。'); }
+        } catch (err) { alert('カメラの起動に失敗しました。'); }
     }
 
-    // 90度回転している状態に対応したドラッグ＆ドロップ処理
+    // 💡 修正2: ズレないドラッグ移動 (translate制御)
     function setupDraggableBoard() {
-        let isDragging = false;
-        let startX, startY, initialX, initialY;
+        let isDragging = false, startX, startY, initTx, initTy;
 
         function startDrag(e) {
             isDragging = true;
-            const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-            const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-            
-            startX = clientX;
-            startY = clientY;
-            
-            const style = window.getComputedStyle(previewBoard);
-            initialX = parseInt(style.left, 10) || 0;
-            initialY = parseInt(style.top, 10) || 0;
+            startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            initTx = translateX; initTy = translateY;
         }
 
         function drag(e) {
             if (!isDragging) return;
-            if (e.type === 'touchmove') e.preventDefault();
-
-            const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-            const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-
-            const dx = clientX - startX;
-            const dy = clientY - startY;
-
-            let newX = initialX + dx;
-            let newY = initialY + dy;
-
-            // 画面内制限（看板の回転を考慮して少し余裕を持たせる）
-            newX = Math.max(-50, Math.min(newX, window.innerWidth - 150));
-            newY = Math.max(50, Math.min(newY, window.innerHeight - 150));
-
-            previewBoard.style.left = newX + 'px';
-            previewBoard.style.top = newY + 'px';
+            if (e.type.includes('touch')) e.preventDefault();
+            const cx = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const cy = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            translateX = initTx + (cx - startX);
+            translateY = initTy + (cy - startY);
+            previewBoard.style.transform = `translate(${translateX}px, ${translateY}px) rotate(-90deg)`;
         }
 
         function endDrag() { isDragging = false; }
-
+        
         previewBoard.addEventListener('mousedown', startDrag);
         document.addEventListener('mousemove', drag);
         document.addEventListener('mouseup', endDrag);
-
         previewBoard.addEventListener('touchstart', startDrag, {passive: false});
         document.addEventListener('touchmove', drag, {passive: false});
         document.addEventListener('touchend', endDrag);
@@ -318,137 +200,117 @@
 
     function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
     function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
-
     function updatePreview() {
         document.getElementById('prev-site').innerText = document.getElementById('inputSite').value || '-';
         document.getElementById('prev-process').innerText = document.getElementById('inputProcess').value || '-';
-        const isON = document.getElementById('boardToggle').value === 'ON';
-        const color = document.getElementById('boardColor').value;
-        if (isON) {
-            previewBoard.style.display = 'flex';
-            previewBoard.className = color === 'green' ? 'board-green' : 'board-white';
-        } else {
-            previewBoard.style.display = 'none';
-        }
+        previewBoard.style.display = document.getElementById('boardToggle').value === 'ON' ? 'flex' : 'none';
+        previewBoard.className = document.getElementById('boardColor').value === 'green' ? 'board-green' : 'board-white';
     }
 
-    // 💡 縦固定カメラの映像を、右に90度回転させて「完璧な横型写真(1920x1080)」として合成出力する魔法
     function takePhoto() {
         const canvas = document.createElement('canvas');
-        // 出力は必ず横向き(1920x1080)
-        canvas.width = 1920;
-        canvas.height = 1080;
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
+        
+        // カメラ映像を歪みなく描画
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // 1. 縦のビデオ映像を右に90度回転して、横型枠にぴったりハメる
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(90 * Math.PI / 180); // 右に90度回転
-        
-        // object-fit: cover の比率を再現してカメラを描画
-        const videoRatio = video.videoWidth / video.videoHeight;
-        const screenRatio = window.innerWidth / window.innerHeight;
-        
-        let dWidth = canvas.height;
-        let dHeight = canvas.height * videoRatio;
-        if (dHeight < canvas.width) {
-            dHeight = canvas.width;
-            dWidth = canvas.width / videoRatio;
-        }
-        
-        ctx.drawImage(video, -dWidth / 2, -dHeight / 2, dWidth, dHeight);
-        ctx.setTransform(1, 0, 0, 1, 0, 0); // 回転リセット
-
-        // 2. 看板がONなら、スマホ画面上の位置から計算して水平に合成
+        // 💡 修正2: 看板の位置を「画面上のビデオ表示エリアに対する割合(%)」で計算して完璧に合わせる
         if (document.getElementById('boardToggle').value === 'ON') {
+            const vRect = video.getBoundingClientRect(); // 画面に表示されているビデオの実際のサイズと位置
+            const bRect = previewBoard.getBoundingClientRect(); // 画面上の看板のサイズと位置
+            
+            // 看板の中心座標を割り出す
+            const centerX = bRect.left + bRect.width / 2;
+            const centerY = bRect.top + bRect.height / 2;
+            
+            // ビデオエリア内のどの割合(%)の位置にいるか計算
+            const pctX = (centerX - vRect.left) / vRect.width;
+            const pctY = (centerY - vRect.top) / vRect.height;
+            
+            // 写真（canvas）上での座標に変換
+            const canvasCX = canvas.width * pctX;
+            const canvasCY = canvas.height * pctY;
+            
+            // 写真サイズと画面表示サイズの比率（スケール）
+            const scale = canvas.width / vRect.width;
+            
+            // 看板の物理サイズ（幅320、高さ130）
+            const boardW = 320; 
+            const boardH = 130;
+            const drawW = boardW * scale;
+            const drawH = boardH * scale;
+            
+            ctx.save();
+            ctx.translate(canvasCX, canvasCY);
+            ctx.rotate(-90 * Math.PI / 180); // ここで-90度回転させて描画
+            
             const isGreen = document.getElementById('boardColor').value === 'green';
-            const rect = previewBoard.getBoundingClientRect();
-
-            // 縦画面の座標を、右90度倒した1920x1080の横画面座標へ変換する
-            const scaleX = canvas.height / window.innerWidth;
-            const scaleY = canvas.width / window.innerHeight;
-
-            // スマホを右に寝かせた時：縦の「上」が横の「右」、「右」が「下」になる
-            const bWidth = rect.height * scaleY;
-            const bHeight = rect.width * scaleX;
-            const bX = rect.top * scaleY;
-            const bY = (window.innerWidth - rect.right) * scaleX;
-
-            // 看板の背景
             ctx.fillStyle = isGreen ? '#0f4c3a' : '#ffffff';
-            ctx.fillRect(bX, bY, bWidth, bHeight);
+            ctx.fillRect(-drawW/2, -drawH/2, drawW, drawH);
             
-            // 枠線
             ctx.strokeStyle = isGreen ? '#ffffff' : '#333333';
-            ctx.lineWidth = 4;
-            ctx.strokeRect(bX + 8, bY + 8, bWidth - 16, bHeight - 16);
+            ctx.lineWidth = 4 * scale;
+            ctx.strokeRect(-drawW/2 + 8*scale, -drawH/2 + 8*scale, drawW - 16*scale, drawH - 16*scale);
             
-            // 文字
             ctx.fillStyle = isGreen ? '#ffffff' : '#333333';
-            const fontSize = Math.floor(bHeight * 0.18);
+            const fontSize = drawH * 0.16;
             ctx.font = `bold ${fontSize}px sans-serif`;
             
             const siteTxt = "現場: " + (document.getElementById('inputSite').value || '-');
             const processTxt = "工種: " + (document.getElementById('inputProcess').value || '-');
             const dateTxt = "日付: " + document.getElementById('prev-date').innerText;
             
-            ctx.fillText(siteTxt, bX + 20, bY + fontSize * 1.6 + 6);
-            ctx.fillText(processTxt, bX + 20, bY + fontSize * 3.2 + 6);
-            ctx.fillText(dateTxt, bX + 20, bY + fontSize * 4.8 + 6);
+            const textX = -drawW/2 + 20*scale;
+            ctx.fillText(siteTxt, textX, -drawH/2 + fontSize * 1.5 + 10*scale);
+            ctx.fillText(processTxt, textX, -drawH/2 + fontSize * 3.0 + 10*scale);
+            ctx.fillText(dateTxt, textX, -drawH/2 + fontSize * 4.5 + 10*scale);
+            
+            ctx.restore();
         }
 
-        // 3. プレビュー用表示生成
-        capturedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        // ▼ 最後に画像を＋90度回転させて完璧な横向き写真(1920x1080など)にする ▼
+        let outCanvas = document.createElement('canvas');
+        if (canvas.width < canvas.height) {
+            outCanvas.width = canvas.height; outCanvas.height = canvas.width;
+            let outCtx = outCanvas.getContext('2d');
+            outCtx.translate(outCanvas.width / 2, outCanvas.height / 2);
+            outCtx.rotate(90 * Math.PI / 180);
+            outCtx.drawImage(canvas, -canvas.width/2, -canvas.height/2);
+        } else {
+            outCanvas = canvas; // すでに横長ならそのまま
+        }
+
+        capturedDataUrl = outCanvas.toDataURL('image/jpeg', 0.9);
         document.getElementById('confirm-img').src = capturedDataUrl;
         document.getElementById('confirm-modal').style.display = 'flex';
 
-        // 4. 💡 カメラロール保存用の「Blobデータ」を同時に生成
-        canvas.toBlob((blob) => {
-            capturedBlob = blob;
-        }, 'image/jpeg', 0.9);
+        outCanvas.toBlob((blob) => { capturedBlob = blob; }, 'image/jpeg', 0.9);
     }
 
     function cancelPhoto() {
-        capturedDataUrl = null;
-        capturedBlob = null;
+        capturedDataUrl = null; capturedBlob = null;
         document.getElementById('confirm-modal').style.display = 'none';
     }
 
-    // 💡 iPhoneのカメラロール（フォトライブラリ）に100%確実に直接保存させるための最新処理
     async function savePhoto() {
-        if (!capturedBlob) return alert('画像処理中。もう一度保存ボタンを押してください');
+        if (!capturedBlob) return alert('画像処理中です...');
+        const filename = `写バ像_${document.getElementById('inputSite').value || '現場'}_${new Date().getTime()}.jpg`;
 
-        const siteName = document.getElementById('inputSite').value || '現場';
-        const filename = `写バ像_${siteName}_${new Date().getTime()}.jpg`;
-
-        // iOS/スマホブラウザでカメラロールに入れるための「Web Share API」を呼び出す
         if (navigator.share && navigator.canShare) {
             try {
                 const file = new File([capturedBlob], filename, { type: 'image/jpeg' });
                 if (navigator.canShare({ files: [file] })) {
-                    // 共有メニューを起動（ここから「画像を保存」を選ぶと直接カメラロールに入ります）
-                    await navigator.share({
-                        files: [file],
-                        title: '写バ像の保存',
-                        text: '現場写真をカメラロールに保存します'
-                    });
-                    cancelPhoto();
-                    return;
+                    await navigator.share({ files: [file], title: '写バ像の保存', text: '画像を保存' });
+                    cancelPhoto(); return;
                 }
-            } catch (err) {
-                // 共有メニューキャンセルの場合は何もしない
-                if (err.name === 'AbortError') return;
-            }
+            } catch (err) { if (err.name === 'AbortError') return; }
         }
 
-        // 💡 パソコンやWeb Share APIが非対応のブラウザ用（古いダウンロード方式）
         const a = document.createElement('a');
-        a.href = capturedDataUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        alert('✅ 保存処理を行いました（端末のダウンロード、またはファイルアプリをご確認ください）');
-        cancelPhoto();
+        a.href = capturedDataUrl; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        alert('✅ 端末に保存しました！'); cancelPhoto();
     }
 </script>
 </body>
