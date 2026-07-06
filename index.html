@@ -18,7 +18,7 @@
             width: 100vw; height: 100vh;
         }
         
-        /* 💡 修正1: 映像を歪ませない（object-fit: contain で本来の比率を維持して中央配置） */
+        /* 映像を歪ませない（object-fit: contain で本来の4:3比率を維持して中央配置） */
         #camera-container { 
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; 
             background: #000; z-index: 1; 
@@ -55,7 +55,7 @@
             padding: 12px; box-sizing: border-box; 
             border: 3px solid; border-radius: 4px; box-shadow: 3px 3px 12px rgba(0,0,0,0.8); 
             z-index: 10; cursor: grab; display: flex; flex-direction: column; justify-content: center; 
-            transform: translate(0px, 0px) rotate(-90deg); /* 💡 移動はtranslateで行う */
+            transform: translate(0px, 0px) rotate(-90deg); /* 移動はtranslateで行う */
         }
         #preview-board:active { cursor: grabbing; }
         
@@ -102,7 +102,7 @@
     </div>
 </div>
 
-<div class="top-info"><img src="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png" style="width:14px; vertical-align:middle; margin-right:5px; border-radius:3px;">写バ像 v2.0</div>
+<div class="top-info"><img src="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png" style="width:14px; vertical-align:middle; margin-right:5px; border-radius:3px;">写バ像 v2.0 (4:3)</div>
 
 <div id="btn-capture" onclick="takePhoto()"><div class="inner-circle"></div></div>
 <div id="btn-settings" onclick="openSettings()"><i class="fas fa-cog"></i></div>
@@ -114,15 +114,15 @@
             <div style="flex: 1;">
                 <label>デジタル看板</label>
                 <select id="boardToggle" onchange="updatePreview()">
-                    <option value="ON">ON (合成する)</option>
-                    <option value="OFF">OFF (実物を使う)</option>
+                    <option value="ON">ON (合成)</option>
+                    <option value="OFF">OFF (なし)</option>
                 </select>
             </div>
             <div style="flex: 1;">
                 <label>看板の色</label>
                 <select id="boardColor" onchange="updatePreview()">
-                    <option value="green">深緑 (白文字)</option>
-                    <option value="white">白 (黒文字)</option>
+                    <option value="green">深緑 (白字)</option>
+                    <option value="white">白 (黒字)</option>
                 </select>
             </div>
         </div>
@@ -160,14 +160,15 @@
     async function startCamera() {
         if (currentStream) currentStream.getTracks().forEach(track => track.stop());
         try {
+            // 💡 修正: iPhone標準の 4:3 比率（1440x1080）を要求
             currentStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false 
+                video: { facingMode: "environment", width: { ideal: 1440 }, height: { ideal: 1080 } }, audio: false 
             });
             video.srcObject = currentStream;
         } catch (err) { alert('カメラの起動に失敗しました。'); }
     }
 
-    // 💡 修正2: ズレないドラッグ移動 (translate制御)
+    // ズレないドラッグ移動 (translate制御)
     function setupDraggableBoard() {
         let isDragging = false, startX, startY, initTx, initTy;
 
@@ -209,13 +210,14 @@
 
     function takePhoto() {
         const canvas = document.createElement('canvas');
+        // カメラから取得した実際の解像度（4:3になるはずです）
         canvas.width = video.videoWidth; canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         
-        // カメラ映像を歪みなく描画
+        // カメラ映像を描画
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // 💡 修正2: 看板の位置を「画面上のビデオ表示エリアに対する割合(%)」で計算して完璧に合わせる
+        // 看板の位置を「画面上のビデオ表示エリアに対する割合(%)」で計算して完璧に合わせる
         if (document.getElementById('boardToggle').value === 'ON') {
             const vRect = video.getBoundingClientRect(); // 画面に表示されているビデオの実際のサイズと位置
             const bRect = previewBoard.getBoundingClientRect(); // 画面上の看板のサイズと位置
@@ -269,7 +271,7 @@
             ctx.restore();
         }
 
-        // ▼ 最後に画像を＋90度回転させて完璧な横向き写真(1920x1080など)にする ▼
+        // ▼ 最後に画像を＋90度回転させて完璧な横向き写真(4:3)にする ▼
         let outCanvas = document.createElement('canvas');
         if (canvas.width < canvas.height) {
             outCanvas.width = canvas.height; outCanvas.height = canvas.width;
@@ -310,7 +312,7 @@
         const a = document.createElement('a');
         a.href = capturedDataUrl; a.download = filename;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        alert('✅ 端末に保存しました！'); cancelPhoto();
+        alert('✅ 端末に保存処理を行いました！'); cancelPhoto();
     }
 </script>
 </body>
