@@ -3,136 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>写バ像 Pro - 横画面特化</title>
+    <title>写バ像 Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ベース設定：横画面前提 */
-        body { margin: 0; background: #000; color: #fff; overflow: hidden; font-family: -apple-system, sans-serif; touch-action: none; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: -apple-system, sans-serif; touch-action: none; }
+        #video { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; }
         
-        /* ファインダー：画面いっぱいに表示 */
-        #view-finder { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background: #111; }
-        #video { width: 100%; height: 100%; object-fit: cover; }
-        
-        /* 黒板のライブプレビュー（ファインダー左下固定） */
-        #board-overlay { 
-            position: absolute; bottom: 4%; left: 3%; 
-            width: 35%; aspect-ratio: 4 / 3; /* 現場黒板の黄金比 */
+        /* 画面ロックが「縦」でも、アプリは強制的に「横画面」として表示させる魔法のレイヤー */
+        #ui-layer {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; pointer-events: none;
+        }
+        @media (orientation: portrait) {
+            #ui-layer {
+                width: 100vh; height: 100vw;
+                transform: translateY(100vh) rotate(-90deg);
+                transform-origin: top left;
+            }
+        }
+
+        #board-ui {
+            position: absolute; bottom: 3%; left: 3%;
+            width: 35%; aspect-ratio: 4 / 3;
             background: #0f4c3a; color: #fff;
-            border: 2px solid #fff; box-sizing: border-box; padding: 4px;
-            display: flex; flex-direction: column; z-index: 10;
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.5); pointer-events: none;
+            border: 2px solid #fff; padding: 4px; box-sizing: border-box;
+            display: flex; flex-direction: column;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.5); pointer-events: auto;
         }
         .board-white { background: #fff !important; color: #333 !important; border-color: #333 !important; }
         
-        .board-row { display: flex; height: 20%; border: 1px solid #fff; border-bottom: none; align-items: center; }
-        .board-row:nth-child(3) { border-bottom: 1px solid #fff; }
-        .board-white .board-row { border-color: #333; }
-        
-        .label { width: 30%; height: 100%; display: flex; justify-content: center; align-items: center; border-right: 1px solid #fff; font-size: clamp(10px, 2vh, 16px); font-weight: bold; }
-        .board-white .label { border-color: #333; }
-        .val { flex: 1; padding-left: 8px; font-size: clamp(12px, 2.2vh, 18px); font-weight: bold; white-space: nowrap; overflow: hidden; }
-        
-        .memo-space { flex: 1; display: flex; justify-content: center; align-items: center; font-size: clamp(16px, 3vh, 24px); font-weight: bold; }
+        .board-row { display: flex; height: 20%; border: 1px solid; border-color: inherit; border-bottom: none; align-items: center; }
+        .board-row:nth-child(3) { border-bottom: 1px solid; border-color: inherit; }
+        .label { width: 30%; height: 100%; display: flex; justify-content: center; align-items: center; border-right: 1px solid; border-color: inherit; font-size: clamp(10px, 2.5vh, 16px); font-weight: bold; }
+        .val { flex: 1; padding-left: 8px; font-size: clamp(12px, 3vh, 20px); font-weight: bold; overflow: hidden; white-space: nowrap; }
+        .memo-space { flex: 1; display: flex; justify-content: center; align-items: center; font-size: clamp(16px, 4vh, 26px); font-weight: bold; }
 
-        /* 操作ボタン群 */
-        #btn-capture { 
-            position: absolute; right: 20px; top: 50%; transform: translateY(-50%); 
-            width: 76px; height: 76px; background: rgba(255,255,255,0.3); 
-            border: 4px solid white; border-radius: 50%; z-index: 20; 
-            display: flex; justify-content: center; align-items: center; cursor: pointer; 
+        #btn-capture {
+            position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+            width: 76px; height: 76px; background: rgba(255,255,255,0.3);
+            border: 4px solid white; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto;
         }
-        #btn-capture .inner-circle { width: 60px; height: 60px; background: white; border-radius: 50%; transition: 0.1s; }
+        #btn-capture .inner-circle { width: 60px; height: 60px; background: white; border-radius: 50%; }
         #btn-capture:active .inner-circle { background: #e53e3e; transform: scale(0.9); }
 
-        #btn-settings { position: absolute; left: 20px; top: 20px; width: 50px; height: 50px; background: rgba(0,0,0,0.6); color: white; border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; font-size: 24px; z-index: 20; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        #btn-settings {
+            position: absolute; left: 20px; top: 20px;
+            width: 50px; height: 50px; background: rgba(0,0,0,0.6); color: white;
+            border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; font-size: 24px;
+            display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto;
+        }
+        .top-info { position: absolute; bottom: 20px; right: 20px; font-size: 12px; color: rgba(255,255,255,0.5); font-weight: bold; }
 
-        /* 設定モーダル */
-        #settings-modal { 
-            display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; 
-            background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; 
+        .modal {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; pointer-events: auto;
         }
-        .modal-content { 
-            background: #222; width: 90%; max-width: 600px; height: 90%; border-radius: 12px; padding: 20px; box-sizing: border-box; 
-            display: flex; flex-direction: row; gap: 20px;
-        }
-        .settings-left { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #111; border-radius: 8px; padding: 10px; }
-        .settings-right { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-        
-        label { font-size: 13px; color: #a0aec0; margin-bottom: 4px; font-weight: bold; margin-top: 10px; }
+        .modal-content { background: #222; width: 90%; max-width: 450px; border-radius: 12px; padding: 20px; box-sizing: border-box; }
+        label { display: block; font-size: 13px; color: #a0aec0; margin-bottom: 4px; font-weight: bold; margin-top: 10px; }
         input, select { width: 100%; padding: 10px; border: 1px solid #4a5568; border-radius: 6px; font-size: 15px; background: #333; color: #fff; box-sizing: border-box; font-weight: bold; }
         .btn-modal { width: 100%; padding: 14px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; background: #3182ce; color: white; margin-top: 20px; }
-
-        /* プレビュー用クローン置き場 */
-        #clone-container { width: 100%; display: flex; justify-content: center; align-items: center; }
-        #clone-container > div { position: relative !important; bottom: auto !important; left: auto !important; width: 100% !important; max-width: 300px; }
-
-        /* 撮影確認モーダル */
-        #confirm-modal { display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); z-index: 200; flex-direction: column; justify-content: center; align-items: center; }
-        #confirm-img { max-width: 90%; max-height: 70vh; border: 2px solid #555; border-radius: 4px; margin-bottom: 20px; }
+        
+        #confirm-img { width: 100%; max-height: 60vh; object-fit: contain; border: 2px solid #555; border-radius: 4px; margin-bottom: 20px; }
         .confirm-actions { display: flex; gap: 15px; }
-        .btn-half { padding: 12px 24px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; }
+        .btn-half { flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; text-align: center; }
     </style>
 </head>
 <body>
 
-<div id="view-finder">
-    <video id="video" autoplay playsinline></video>
-    
-    <div id="board-overlay" class="board-green">
+<video id="video" autoplay playsinline></video>
+
+<div id="ui-layer">
+    <div id="board-ui" class="board-green">
         <div class="board-row"><div class="label">工事名</div><div class="val" id="v-site">金田ビル</div></div>
-        <div class="row-2 board-row"><div class="label">工 種</div><div class="val" id="v-process">防水工事</div></div>
-        <div class="row-3 board-row"><div class="label" id="lbl-loc">測 点</div><div class="val" id="v-loc">バルコニー</div></div>
+        <div class="board-row"><div class="label">工 種</div><div class="val" id="v-process">防水工事</div></div>
+        <div class="board-row"><div class="label" id="lbl-loc">測 点</div><div class="val" id="v-loc">バルコニー</div></div>
         <div class="memo-space" id="v-memo">施工前</div>
     </div>
-</div>
+    
+    <div id="btn-capture" onclick="takePhoto()"><div class="inner-circle"></div></div>
+    <div id="btn-settings" onclick="openSettings()"><i class="fas fa-cog"></i></div>
+    <div class="top-info">写バ像 Pro - 現場横撮り版</div>
 
-<div id="btn-capture" onclick="takePhoto()"><div class="inner-circle"></div></div>
-<div id="btn-settings" onclick="openSettings()"><i class="fas fa-cog"></i></div>
-
-<div id="settings-modal">
-    <div class="modal-content">
-        <div class="settings-left">
-            <div style="color:#aaa; font-size:12px; margin-bottom:10px;">リアルタイムプレビュー</div>
-            <div id="clone-container"></div>
-        </div>
-        <div class="settings-right">
-            <label>レイアウト</label>
-            <select id="tmpl" onchange="updateBoard()">
-                <option value="1">標準 (測点)</option>
-                <option value="2">日付入り</option>
-            </select>
-
-            <label>カラー</label>
-            <select id="b-color" onchange="updateBoard()">
-                <option value="green">深緑 (白字)</option>
-                <option value="white">白 (黒字)</option>
-            </select>
-
-            <label>工事名</label><input type="text" id="in-site" value="金田ビル" placeholder="例: 堺市○○邸 新築工事" oninput="updateBoard()">
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="color:#fff; margin-top:0;">看板設定</h3>
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1;">
+                    <label>レイアウト</label>
+                    <select id="tmpl" onchange="updateBoard()">
+                        <option value="1">標準 (測点)</option>
+                        <option value="2">日付入り</option>
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label>カラー</label>
+                    <select id="b-color" onchange="updateBoard()">
+                        <option value="green">深緑 (白字)</option>
+                        <option value="white">白 (黒字)</option>
+                    </select>
+                </div>
+            </div>
+            <label>工事名</label><input type="text" id="in-site" value="金田ビル" oninput="updateBoard()">
             <label>工種</label><input type="text" id="in-process" value="防水工事" oninput="updateBoard()">
-            <label id="lbl-input-loc">測点</label><input type="text" id="in-loc" value="バルコニー" oninput="updateBoard()">
+            <label id="lbl-input-loc">測点 / 撮影日</label><input type="text" id="in-loc" value="バルコニー" oninput="updateBoard()">
             <label>特記事項</label><input type="text" id="in-memo" value="施工前" oninput="updateBoard()">
-            
-            <button class="btn-modal" onclick="closeSettings()">撮影に戻る</button>
+            <button class="btn-modal" onclick="closeSettings()">完了</button>
         </div>
     </div>
-</div>
 
-<div id="confirm-modal">
-    <img id="confirm-img" src="">
-    <div class="confirm-actions">
-        <button class="btn-half" style="background: #4a5568;" onclick="cancelPhoto()"><i class="fas fa-redo"></i> 撮り直す</button>
-        <button class="btn-half" style="background: #3182ce;" onclick="savePhoto()"><i class="fas fa-download"></i> 保存する</button>
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content" style="background:transparent; padding:0; display:flex; flex-direction:column; align-items:center;">
+            <img id="confirm-img" src="">
+            <div class="confirm-actions" style="width:100%;">
+                <button class="btn-half" style="background: #4a5568;" onclick="cancelPhoto()">撮り直す</button>
+                <button class="btn-half" style="background: #3182ce;" onclick="savePhoto()">保存する</button>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
     const video = document.getElementById('video');
-    const overlay = document.getElementById('board-overlay');
-    const cloneContainer = document.getElementById('clone-container');
     let capturedBlob = null;
 
-    // カメラ起動（横向き前提の解像度を要求）
     async function startCamera() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -142,23 +136,13 @@
         } catch(e) { alert("カメラが起動できません"); }
     }
 
-    // 設定画面の開閉とクローンの生成
-    function openSettings() {
-        cloneContainer.innerHTML = '';
-        cloneContainer.appendChild(overlay.cloneNode(true));
-        document.getElementById('settings-modal').style.display = 'flex';
-    }
+    function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
+    function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
 
-    function closeSettings() {
-        document.getElementById('settings-modal').style.display = 'none';
-    }
-
-    // 入力内容を看板に同期
     function updateBoard() {
         const t = document.getElementById('tmpl').value;
         const c = document.getElementById('b-color').value;
-        const today = new Date();
-        const dStr = today.getFullYear() + '年' + (today.getMonth()+1) + '月' + today.getDate() + '日';
+        const dStr = new Date().toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'});
 
         document.getElementById('v-site').innerText = document.getElementById('in-site').value;
         document.getElementById('v-process').innerText = document.getElementById('in-process').value;
@@ -171,100 +155,84 @@
             document.getElementById('in-loc').style.display = 'block';
         } else {
             document.getElementById('lbl-loc').innerText = "撮影日";
-            document.getElementById('lbl-input-loc').innerText = "撮影日 (自動)";
+            document.getElementById('lbl-input-loc').innerText = "撮影日 (自動計算)";
             document.getElementById('v-loc').innerText = dStr;
             document.getElementById('in-loc').style.display = 'none';
         }
-
-        overlay.className = c === 'green' ? 'board-green' : 'board-white';
-        
-        // クローン側にも即時反映
-        if(document.getElementById('settings-modal').style.display === 'flex') {
-            cloneContainer.innerHTML = '';
-            cloneContainer.appendChild(overlay.cloneNode(true));
-        }
+        document.getElementById('board-ui').className = c === 'green' ? 'board-green' : 'board-white';
     }
 
-    // 撮影処理：Canvasに映像と黒板を寸分違わず合成
     function takePhoto() {
         const c = document.createElement('canvas');
+        c.width = 1440;
+        c.height = 1080;
+        const ctx = c.getContext('2d');
         const vw = video.videoWidth;
         const vh = video.videoHeight;
-        c.width = vw;
-        c.height = vh;
-        const ctx = c.getContext('2d');
 
-        // 映像をそのまま描画（回転なし！）
-        ctx.drawImage(video, 0, 0, vw, vh);
+        // 映像が縦(Portrait Lock時)の場合、-90度回転させて完璧な横長写真に変換
+        if (vw < vh) {
+            ctx.translate(c.width / 2, c.height / 2);
+            ctx.rotate(-90 * Math.PI / 180);
+            ctx.drawImage(video, -c.height / 2, -c.width / 2, c.height, c.width);
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        } else {
+            ctx.drawImage(video, 0, 0, c.width, c.height);
+        }
 
-        // --- 看板の描画処理 ---
         const isGreen = document.getElementById('b-color').value === 'green';
-        const bw = vw * 0.35; // 幅は写真の35%
-        const bh = bw * 0.75; // 比率 4:3
-        const bx = vw * 0.03; // 左から3%
-        const by = vh - bh - vw * 0.03; // 下から3%
-        const p = vw * 0.004; // パディング・枠線幅
+        const bw = 1440 * 0.35;
+        const bh = bw * 0.75;
+        const bx = 1440 * 0.03;
+        const by = 1080 - bh - 1440 * 0.03;
+        const p = 6;
 
-        // 背景と外枠
         ctx.fillStyle = isGreen ? '#0f4c3a' : '#ffffff';
         ctx.fillRect(bx, by, bw, bh);
         ctx.lineWidth = p;
         ctx.strokeStyle = isGreen ? '#ffffff' : '#333333';
         ctx.strokeRect(bx + p, by + p, bw - p*2, bh - p*2);
 
-        // 行の設定
-        const rh = (bh - p*2) * 0.2; // 1行の高さ
-        const cw = (bw - p*2) * 0.3; // ラベル列の幅
         ctx.fillStyle = isGreen ? '#ffffff' : '#333333';
-
-        const site = document.getElementById('v-site').innerText;
-        const process = document.getElementById('v-process').innerText;
-        const loc = document.getElementById('v-loc').innerText;
-        const memo = document.getElementById('v-memo').innerText;
+        const rh = (bh - p*2) * 0.2;
+        const cw = (bw - p*2) * 0.3;
         const labels = ['工事名', '工 種', document.getElementById('lbl-loc').innerText];
-        const vals = [site, process, loc];
+        const vals = [
+            document.getElementById('v-site').innerText,
+            document.getElementById('v-process').innerText,
+            document.getElementById('v-loc').innerText
+        ];
+        const memo = document.getElementById('v-memo').innerText;
 
-        // テーブル線と文字の描画
         for(let i=0; i<3; i++) {
             const ry = by + p + i*rh;
             ctx.strokeRect(bx + p, ry, cw, rh);
             ctx.strokeRect(bx + p + cw, ry, (bw - p*2) - cw, rh);
-            
             ctx.textBaseline = 'middle';
-            // ラベル
             ctx.textAlign = 'center';
-            ctx.font = `bold ${rh * 0.5}px sans-serif`;
+            ctx.font = `bold ${rh * 0.45}px sans-serif`;
             ctx.fillText(labels[i], bx + p + cw/2, ry + rh/2);
-            // 値
             ctx.textAlign = 'left';
             ctx.font = `bold ${rh * 0.55}px sans-serif`;
-            ctx.fillText(vals[i], bx + p + cw + p*2, ry + rh/2);
+            ctx.fillText(vals[i], bx + p + cw + 10, ry + rh/2);
         }
 
-        // メモ
         if(memo) {
             ctx.textAlign = 'center';
-            ctx.font = `bold ${rh * 0.8}px sans-serif`;
+            ctx.font = `bold ${rh * 0.9}px sans-serif`;
             ctx.fillText(memo, bx + bw/2, by + p + rh*3 + ((bh - p*2) - rh*3)/2);
         }
 
-        // 確認画面へ
-        const dataUrl = c.toDataURL('image/jpeg', 0.9);
-        document.getElementById('confirm-img').src = dataUrl;
+        document.getElementById('confirm-img').src = c.toDataURL('image/jpeg', 0.9);
         document.getElementById('confirm-modal').style.display = 'flex';
         c.toBlob(b => capturedBlob = b, 'image/jpeg', 0.9);
     }
 
-    function cancelPhoto() {
-        document.getElementById('confirm-modal').style.display = 'none';
-        capturedBlob = null;
-    }
+    function cancelPhoto() { document.getElementById('confirm-modal').style.display = 'none'; capturedBlob = null; }
 
     async function savePhoto() {
         if(!capturedBlob) return;
         const filename = `写バ像_${Date.now()}.jpg`;
-        
-        // iOS Safari向け保存処理 (Web Share API)
         if (navigator.share && navigator.canShare) {
             try {
                 const file = new File([capturedBlob], filename, { type: 'image/jpeg' });
@@ -272,10 +240,8 @@
                     await navigator.share({ files: [file] });
                     cancelPhoto(); return;
                 }
-            } catch (err) { if (err.name === 'AbortError') return; }
+            } catch (e) { if (e.name === 'AbortError') return; }
         }
-        
-        // PC・Android向けフォールバック
         const a = document.createElement('a');
         a.href = document.getElementById('confirm-img').src;
         a.download = filename;
@@ -283,10 +249,7 @@
         cancelPhoto();
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        startCamera();
-        updateBoard();
-    });
+    document.addEventListener('DOMContentLoaded', () => { startCamera(); updateBoard(); });
 </script>
 </body>
 </html>
