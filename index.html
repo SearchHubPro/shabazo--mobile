@@ -6,20 +6,29 @@
     <title>写バ像 Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: -apple-system, sans-serif; touch-action: none; }
-        #video { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; }
-        
-        /* 画面ロックが「縦」でも、アプリは強制的に「横画面」として表示させる魔法のレイヤー */
-        #ui-layer {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%; pointer-events: none;
+        body { 
+            margin: 0; background: #000; overflow: hidden; font-family: -apple-system, sans-serif; 
+            display: flex; justify-content: center; align-items: center; height: 100vh; touch-action: none; 
         }
-        @media (orientation: portrait) {
-            #ui-layer {
-                width: 100vh; height: 100vw;
-                transform: translateY(100vh) rotate(-90deg);
-                transform-origin: top left;
-            }
+        
+        /* 全画面ではなく、カメラ本来の4:3比率を維持する枠 */
+        #app-wrapper {
+            position: relative;
+            width: 100vw;
+            height: calc(100vw * 4 / 3);
+            max-height: 100vh;
+            max-width: calc(100vh * 3 / 4);
+            background: #111;
+            overflow: hidden;
+        }
+        #video { width: 100%; height: 100%; object-fit: contain; }
+        
+        /* 枠のサイズに合わせてUIを強制横向き展開 */
+        #ui-layer {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-90deg);
+            pointer-events: none;
         }
 
         #board-ui {
@@ -39,24 +48,23 @@
         .memo-space { flex: 1; display: flex; justify-content: center; align-items: center; font-size: clamp(16px, 4vh, 26px); font-weight: bold; }
 
         #btn-capture {
-            position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+            position: absolute; right: 5%; top: 50%; transform: translateY(-50%);
             width: 76px; height: 76px; background: rgba(255,255,255,0.3);
             border: 4px solid white; border-radius: 50%;
             display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto;
         }
-        #btn-capture .inner-circle { width: 60px; height: 60px; background: white; border-radius: 50%; }
+        #btn-capture .inner-circle { width: 60px; height: 60px; background: white; border-radius: 50%; transition: 0.1s; }
         #btn-capture:active .inner-circle { background: #e53e3e; transform: scale(0.9); }
 
         #btn-settings {
-            position: absolute; left: 20px; top: 20px;
+            position: absolute; left: 5%; top: 5%;
             width: 50px; height: 50px; background: rgba(0,0,0,0.6); color: white;
             border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; font-size: 24px;
             display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto;
         }
-        .top-info { position: absolute; bottom: 20px; right: 20px; font-size: 12px; color: rgba(255,255,255,0.5); font-weight: bold; }
 
         .modal {
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; pointer-events: auto;
         }
         .modal-content { background: #222; width: 90%; max-width: 450px; border-radius: 12px; padding: 20px; box-sizing: border-box; }
@@ -71,54 +79,53 @@
 </head>
 <body>
 
-<video id="video" autoplay playsinline></video>
-
-<div id="ui-layer">
-    <div id="board-ui" class="board-green">
-        <div class="board-row"><div class="label">工事名</div><div class="val" id="v-site">金田ビル</div></div>
-        <div class="board-row"><div class="label">工 種</div><div class="val" id="v-process">防水工事</div></div>
-        <div class="board-row"><div class="label" id="lbl-loc">測 点</div><div class="val" id="v-loc">バルコニー</div></div>
-        <div class="memo-space" id="v-memo">施工前</div>
-    </div>
-    
-    <div id="btn-capture" onclick="takePhoto()"><div class="inner-circle"></div></div>
-    <div id="btn-settings" onclick="openSettings()"><i class="fas fa-cog"></i></div>
-    <div class="top-info">写バ像 Pro - 現場横撮り版</div>
-
-    <div id="settings-modal" class="modal">
-        <div class="modal-content">
-            <h3 style="color:#fff; margin-top:0;">看板設定</h3>
-            <div style="display:flex; gap:10px;">
-                <div style="flex:1;">
-                    <label>レイアウト</label>
-                    <select id="tmpl" onchange="updateBoard()">
-                        <option value="1">標準 (測点)</option>
-                        <option value="2">日付入り</option>
-                    </select>
-                </div>
-                <div style="flex:1;">
-                    <label>カラー</label>
-                    <select id="b-color" onchange="updateBoard()">
-                        <option value="green">深緑 (白字)</option>
-                        <option value="white">白 (黒字)</option>
-                    </select>
-                </div>
-            </div>
-            <label>工事名</label><input type="text" id="in-site" value="金田ビル" oninput="updateBoard()">
-            <label>工種</label><input type="text" id="in-process" value="防水工事" oninput="updateBoard()">
-            <label id="lbl-input-loc">測点 / 撮影日</label><input type="text" id="in-loc" value="バルコニー" oninput="updateBoard()">
-            <label>特記事項</label><input type="text" id="in-memo" value="施工前" oninput="updateBoard()">
-            <button class="btn-modal" onclick="closeSettings()">完了</button>
+<div id="app-wrapper">
+    <video id="video" autoplay playsinline></video>
+    <div id="ui-layer">
+        <div id="board-ui" class="board-green">
+            <div class="board-row"><div class="label">工事名</div><div class="val" id="v-site">金田ビル</div></div>
+            <div class="board-row"><div class="label">工 種</div><div class="val" id="v-process">防水工事</div></div>
+            <div class="board-row"><div class="label" id="lbl-loc">測 点</div><div class="val" id="v-loc">バルコニー</div></div>
+            <div class="memo-space" id="v-memo">施工前</div>
         </div>
+        <div id="btn-capture" onclick="takePhoto()"><div class="inner-circle"></div></div>
+        <div id="btn-settings" onclick="openSettings()"><i class="fas fa-cog"></i></div>
     </div>
+</div>
 
-    <div id="confirm-modal" class="modal">
-        <div class="modal-content" style="background:transparent; padding:0; display:flex; flex-direction:column; align-items:center;">
-            <img id="confirm-img" src="">
-            <div class="confirm-actions" style="width:100%;">
-                <button class="btn-half" style="background: #4a5568;" onclick="cancelPhoto()">撮り直す</button>
-                <button class="btn-half" style="background: #3182ce;" onclick="savePhoto()">保存する</button>
+<div id="settings-modal" class="modal">
+    <div class="modal-content">
+        <h3 style="color:#fff; margin-top:0;">看板設定</h3>
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1;">
+                <label>レイアウト</label>
+                <select id="tmpl" onchange="updateBoard()">
+                    <option value="1">標準 (測点)</option>
+                    <option value="2">日付入り</option>
+                </select>
             </div>
+            <div style="flex:1;">
+                <label>カラー</label>
+                <select id="b-color" onchange="updateBoard()">
+                    <option value="green">深緑 (白字)</option>
+                    <option value="white">白 (黒字)</option>
+                </select>
+            </div>
+        </div>
+        <label>工事名</label><input type="text" id="in-site" value="金田ビル" oninput="updateBoard()">
+        <label>工種</label><input type="text" id="in-process" value="防水工事" oninput="updateBoard()">
+        <label id="lbl-input-loc">測点 / 撮影日</label><input type="text" id="in-loc" value="バルコニー" oninput="updateBoard()">
+        <label>特記事項</label><input type="text" id="in-memo" value="施工前" oninput="updateBoard()">
+        <button class="btn-modal" onclick="closeSettings()">完了</button>
+    </div>
+</div>
+
+<div id="confirm-modal" class="modal">
+    <div class="modal-content" style="background:transparent; padding:0; display:flex; flex-direction:column; align-items:center;">
+        <img id="confirm-img" src="">
+        <div class="confirm-actions" style="width:100%;">
+            <button class="btn-half" style="background: #4a5568;" onclick="cancelPhoto()">撮り直す</button>
+            <button class="btn-half" style="background: #3182ce;" onclick="savePhoto()">保存する</button>
         </div>
     </div>
 </div>
@@ -126,6 +133,16 @@
 <script>
     const video = document.getElementById('video');
     let capturedBlob = null;
+
+    // 枠に合わせてUI層の縦横サイズをジャストフィットさせる
+    function resizeUI() {
+        const wrapper = document.getElementById('app-wrapper');
+        const ui = document.getElementById('ui-layer');
+        ui.style.width = wrapper.clientHeight + 'px';
+        ui.style.height = wrapper.clientWidth + 'px';
+    }
+    window.addEventListener('resize', resizeUI);
+    document.addEventListener('DOMContentLoaded', resizeUI);
 
     async function startCamera() {
         try {
@@ -155,7 +172,7 @@
             document.getElementById('in-loc').style.display = 'block';
         } else {
             document.getElementById('lbl-loc').innerText = "撮影日";
-            document.getElementById('lbl-input-loc').innerText = "撮影日 (自動計算)";
+            document.getElementById('lbl-input-loc').innerText = "撮影日 (自動)";
             document.getElementById('v-loc').innerText = dStr;
             document.getElementById('in-loc').style.display = 'none';
         }
@@ -170,11 +187,11 @@
         const vw = video.videoWidth;
         const vh = video.videoHeight;
 
-        // 映像が縦(Portrait Lock時)の場合、-90度回転させて完璧な横長写真に変換
+        // 映像が縦の場合、+90度回転させて完璧な横長写真に変換 (逆さバグ修正済)
         if (vw < vh) {
             ctx.translate(c.width / 2, c.height / 2);
-            ctx.rotate(-90 * Math.PI / 180);
-            ctx.drawImage(video, -c.height / 2, -c.width / 2, c.height, c.width);
+            ctx.rotate(90 * Math.PI / 180); 
+            ctx.drawImage(video, -vh / 2, -vw / 2, vh, vw);
             ctx.setTransform(1, 0, 0, 1, 0, 0);
         } else {
             ctx.drawImage(video, 0, 0, c.width, c.height);
@@ -184,7 +201,7 @@
         const bw = 1440 * 0.35;
         const bh = bw * 0.75;
         const bx = 1440 * 0.03;
-        const by = 1080 - bh - 1440 * 0.03;
+        const by = 1080 - bh - 1080 * 0.03;
         const p = 6;
 
         ctx.fillStyle = isGreen ? '#0f4c3a' : '#ffffff';
