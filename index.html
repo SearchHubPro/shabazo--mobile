@@ -3,40 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>写バ像 - 現場撮影アプリ</title>
+    <title>写バ像 - 現場撮影</title>
+    
+    <link rel="apple-touch-icon" href="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png">
+    <link rel="icon" type="image/png" href="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #000; color: #fff; margin: 0; overflow: hidden; touch-action: none; /* スクロール防止 */ }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #000; color: #fff; margin: 0; overflow: hidden; touch-action: none; }
         
         /* 全画面カメラ領域 */
         #camera-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 1; }
         #video { width: 100%; height: 100%; object-fit: cover; }
         
         /* 歯車ボタン（設定）左下配置 */
-        #btn-settings { position: absolute; bottom: 30px; left: 20px; width: 50px; height: 50px; background: rgba(0,0,0,0.6); color: white; border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; font-size: 24px; z-index: 20; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        #btn-settings { position: absolute; bottom: 20px; left: 20px; width: 50px; height: 50px; background: rgba(0,0,0,0.6); color: white; border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; font-size: 24px; z-index: 20; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
         
-        /* 撮影ボタン 右側中央配置 */
-        #btn-capture { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); width: 70px; height: 70px; background: rgba(255,255,255,0.3); border: 4px solid white; border-radius: 50%; z-index: 20; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.6); backdrop-filter: blur(2px); transition: 0.1s; }
-        #btn-capture .inner-circle { width: 54px; height: 54px; background: white; border-radius: 50%; }
+        /* 撮影ボタン：右端の真ん中（スマホ横持ち時に右手親指で押す位置） */
+        #btn-capture { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); width: 76px; height: 76px; background: rgba(255,255,255,0.3); border: 4px solid white; border-radius: 50%; z-index: 20; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.8); backdrop-filter: blur(2px); transition: 0.1s; }
+        #btn-capture .inner-circle { width: 60px; height: 60px; background: white; border-radius: 50%; }
         #btn-capture:active .inner-circle { background: #e53e3e; transform: scale(0.9); }
 
         /* ヘッダー情報（簡易表示） */
-        .top-info { position: absolute; top: 20px; left: 20px; z-index: 20; background: rgba(0,0,0,0.5); padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; backdrop-filter: blur(4px); pointer-events: none; }
+        .top-info { position: absolute; top: 20px; left: 20px; z-index: 20; background: rgba(0,0,0,0.5); padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; backdrop-filter: blur(4px); pointer-events: none; display: flex; align-items: center; gap: 6px; }
+        .top-info img { width: 18px; height: 18px; border-radius: 4px; }
         
-        /* プレビュー用看板（ドラッグ可能） */
-        #preview-board { position: absolute; bottom: 20%; left: 10%; width: 45%; max-width: 250px; padding: 10px; box-sizing: border-box; border: 2px solid; border-radius: 4px; box-shadow: 3px 3px 10px rgba(0,0,0,0.6); z-index: 10; cursor: grab; }
+        /* プレビュー用看板（横長に最適化・ドラッグ可能） */
+        #preview-board { position: absolute; bottom: 15%; left: 10%; width: 50%; max-width: 360px; padding: 12px; box-sizing: border-box; border: 3px solid; border-radius: 4px; box-shadow: 3px 3px 12px rgba(0,0,0,0.8); z-index: 10; cursor: grab; display: flex; flex-direction: column; justify-content: center; }
         #preview-board:active { cursor: grabbing; }
+        
         .board-green { background: #0f4c3a; color: #fff; border-color: #fff; }
         .board-white { background: #fff; color: #333; border-color: #333; }
-        .board-row { font-size: 14px; font-weight: bold; margin-bottom: 4px; display: flex; border-bottom: 1px dotted rgba(255,255,255,0.4); padding-bottom: 4px; }
-        .board-white .board-row { border-bottom: 1px dotted rgba(0,0,0,0.4); }
-        .board-label { width: 40px; flex-shrink: 0; }
-        .board-val { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        
+        .board-row { font-size: 16px; font-weight: bold; margin-bottom: 6px; display: flex; border-bottom: 1px dotted rgba(255,255,255,0.5); padding-bottom: 6px; align-items: center; }
+        .board-white .board-row { border-bottom: 1px dotted rgba(0,0,0,0.5); }
+        .board-row:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+        
+        .board-label { width: 45px; flex-shrink: 0; font-size: 14px; opacity: 0.9; }
+        .board-val { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 18px; padding-left: 5px;}
         
         /* 設定モーダル */
         #settings-modal, #confirm-modal { display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 100; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; backdrop-filter: blur(5px); }
-        .modal-content { background: #222; width: 100%; max-width: 400px; border-radius: 16px; padding: 24px; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        .modal-content h3 { margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid #4a5568; padding-bottom: 10px; color: #fff; }
+        .modal-content { background: #222; width: 100%; max-width: 450px; border-radius: 16px; padding: 24px; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .modal-content h3 { margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid #4a5568; padding-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .modal-content h3 img { width: 24px; height: 24px; border-radius: 6px; }
         
         label { display: block; font-size: 13px; color: #a0aec0; margin-bottom: 6px; font-weight: bold; }
         input, select { width: 100%; padding: 12px; border: 1px solid #4a5568; border-radius: 8px; font-size: 15px; background: #333; color: #fff; box-sizing: border-box; margin-bottom: 16px; font-weight: bold; }
@@ -44,8 +56,8 @@
         .btn-modal { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; background: #3182ce; color: white; display: flex; justify-content: center; gap: 8px; }
         
         /* 確認画面用 */
-        #confirm-img { width: 100%; max-height: 60vh; object-fit: contain; margin-bottom: 20px; border-radius: 8px; border: 2px solid #4a5568; }
-        .confirm-actions { display: flex; gap: 12px; width: 100%; max-width: 400px; }
+        #confirm-img { width: 100%; max-height: 70vh; object-fit: contain; margin-bottom: 20px; border-radius: 8px; border: 2px solid #4a5568; }
+        .confirm-actions { display: flex; gap: 12px; width: 100%; max-width: 450px; }
         .btn-half { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; display: flex; justify-content: center; align-items: center; gap: 8px; }
     </style>
 </head>
@@ -57,11 +69,13 @@
     <div id="preview-board" class="board-green">
         <div class="board-row"><div class="board-label">現場</div><div class="board-val" id="prev-site">-</div></div>
         <div class="board-row"><div class="board-label">工種</div><div class="board-val" id="prev-process">-</div></div>
-        <div class="board-row" style="border:none; margin-bottom:0;"><div class="board-label">日付</div><div class="board-val" id="prev-date"></div></div>
+        <div class="board-row"><div class="board-label">日付</div><div class="board-val" id="prev-date"></div></div>
     </div>
 </div>
 
-<div class="top-info"><i class="fas fa-camera"></i> 写バ像</div>
+<div class="top-info">
+    <img src="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png" alt="icon"> 写バ像
+</div>
 
 <div id="btn-settings" onclick="openSettings()"><i class="fas fa-cog"></i></div>
 
@@ -69,19 +83,24 @@
 
 <div id="settings-modal">
     <div class="modal-content">
-        <h3><i class="fas fa-sliders-h"></i> 看板設定</h3>
+        <h3><img src="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png" alt="icon"> 看板設定</h3>
         
-        <label>表示のON/OFF</label>
-        <select id="boardToggle" onchange="updatePreview()">
-            <option value="ON">ON (合成する)</option>
-            <option value="OFF">OFF (実物を使う)</option>
-        </select>
-        
-        <label>看板の色</label>
-        <select id="boardColor" onchange="updatePreview()">
-            <option value="green">深緑 (白文字)</option>
-            <option value="white">白 (黒文字)</option>
-        </select>
+        <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+                <label>表示のON/OFF</label>
+                <select id="boardToggle" onchange="updatePreview()">
+                    <option value="ON">ON (合成する)</option>
+                    <option value="OFF">OFF (実物を使う)</option>
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <label>看板の色</label>
+                <select id="boardColor" onchange="updatePreview()">
+                    <option value="green">深緑 (白文字)</option>
+                    <option value="white">白 (黒文字)</option>
+                </select>
+            </div>
+        </div>
 
         <label>現場名</label>
         <input type="text" id="inputSite" placeholder="例: ○○邸 新築工事" oninput="updatePreview()">
@@ -90,7 +109,7 @@
         <input type="text" id="inputProcess" placeholder="例: 基礎配筋検査" oninput="updatePreview()">
         
         <button class="btn-modal" onclick="closeSettings()"><i class="fas fa-check"></i> 撮影に戻る</button>
-        <p style="font-size: 11px; color:#a0aec0; text-align:center; margin-top:15px;">※撮影画面で看板を指で動かせます</p>
+        <p style="font-size: 12px; color:#a0aec0; text-align:center; margin-top:15px;"><i class="fas fa-hand-pointer"></i> 撮影画面で看板を指で動かせます</p>
     </div>
 </div>
 
@@ -117,9 +136,8 @@
         startCamera();
         setupDraggableBoard();
         
-        // ▼ iPhone等の音量ボタン撮影ハック（※ブラウザ仕様により動かない機種が多いです）▼
+        // 音量ボタン撮影対応
         window.addEventListener('keydown', function(e) {
-            // 音量Up/Downボタンが押されたらシャッターを切る（設定画面が開いてない時）
             if ((e.key === 'VolumeUp' || e.key === 'VolumeDown' || e.keyCode === 175 || e.keyCode === 174) && 
                 document.getElementById('settings-modal').style.display !== 'flex' &&
                 document.getElementById('confirm-modal').style.display !== 'flex') {
@@ -131,6 +149,7 @@
     async function startCamera() {
         if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
         try {
+            // 横長（Landscape）の解像度を優先して要求
             currentStream = await navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false 
             });
@@ -138,7 +157,7 @@
         } catch (err) { alert('カメラの起動に失敗しました。'); }
     }
 
-    // ▼ 看板を指で動かす（ドラッグ）処理 ▼
+    // 看板のドラッグ移動処理
     function setupDraggableBoard() {
         let isDragging = false;
         let startX, startY, initialX, initialY;
@@ -152,22 +171,20 @@
                 startX = e.clientX;
                 startY = e.clientY;
             }
-            // 要素の現在の位置を取得
             const style = window.getComputedStyle(previewBoard);
-            const matrix = new WebKitCSSMatrix(style.transform);
             initialX = parseInt(style.left, 10) || 0;
-            initialY = parseInt(style.top, 10) || 0;
             
-            // left/topで管理するためにbottomを解除
             if(style.bottom !== 'auto') {
                 initialY = window.innerHeight - parseInt(style.bottom, 10) - previewBoard.offsetHeight;
                 previewBoard.style.bottom = 'auto';
+            } else {
+                initialY = parseInt(style.top, 10) || 0;
             }
         }
 
         function drag(e) {
             if (!isDragging) return;
-            e.preventDefault(); // スクロール防止
+            e.preventDefault();
             let currentX, currentY;
             if (e.type === 'touchmove') {
                 currentX = e.touches[0].clientX;
@@ -180,7 +197,6 @@
             let dx = currentX - startX;
             let dy = currentY - startY;
 
-            // 画面外に出ないように制限
             let newX = initialX + dx;
             let newY = initialY + dy;
             const maxW = window.innerWidth - previewBoard.offsetWidth;
@@ -213,7 +229,7 @@
         const isON = document.getElementById('boardToggle').value === 'ON';
         const color = document.getElementById('boardColor').value;
         if (isON) {
-            previewBoard.style.display = 'block';
+            previewBoard.style.display = 'flex';
             previewBoard.className = color === 'green' ? 'board-green' : 'board-white';
         } else {
             previewBoard.style.display = 'none';
@@ -222,48 +238,39 @@
 
     function takePhoto() {
         const canvas = document.createElement('canvas');
+        // カメラから取得した本来の解像度（横長）でキャンバスを作成
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
-
-        // 1. 写真を描画（カメラの縦横比によってはクロップが必要だが、一旦全体描画）
-        // オブジェクトフィット(cover)の状態を再現するための中央切り抜き計算
-        const vRatio = canvas.width / canvas.height;
-        const wRatio = window.innerWidth / window.innerHeight;
-        let drawX = 0, drawY = 0, drawW = canvas.width, drawH = canvas.height;
-
-        if (vRatio > wRatio) { // カメラ映像の方が横長
-            drawW = canvas.height * wRatio;
-            drawX = (canvas.width - drawW) / 2;
-        } else { // カメラ映像の方が縦長
-            drawH = canvas.width / wRatio;
-            drawY = (canvas.height - drawH) / 2;
-        }
         
         ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.drawImage(video, drawX, drawY, drawW, drawH, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // 2. 看板ONなら、画面上の位置を計算して描画
+        // 看板ONなら合成
         if (document.getElementById('boardToggle').value === 'ON') {
             const isGreen = document.getElementById('boardColor').value === 'green';
             
-            // 画面サイズとCanvasサイズの比率
+            // スマホ画面のサイズと、実際のカメラ解像度の比率を計算
             const scaleX = canvas.width / window.innerWidth;
             const scaleY = canvas.height / window.innerHeight;
             
             const rect = previewBoard.getBoundingClientRect();
+            // 看板の座標とサイズを実際の写真解像度に合わせて拡大
             const bX = rect.left * scaleX;
             const bY = rect.top * scaleY;
             const bWidth = rect.width * scaleX;
             const bHeight = rect.height * scaleY;
             
+            // 背景
             ctx.fillStyle = isGreen ? '#0f4c3a' : '#ffffff';
             ctx.fillRect(bX, bY, bWidth, bHeight);
             
+            // 枠線
             ctx.strokeStyle = isGreen ? '#ffffff' : '#333333';
-            ctx.lineWidth = canvas.width * 0.005;
-            ctx.strokeRect(bX + (10*scaleX), bY + (10*scaleY), bWidth - (20*scaleX), bHeight - (20*scaleY));
+            ctx.lineWidth = Math.max(2, canvas.width * 0.003);
+            ctx.strokeRect(bX + (8*scaleX), bY + (8*scaleY), bWidth - (16*scaleX), bHeight - (16*scaleY));
             
+            // 文字設定
             ctx.fillStyle = isGreen ? '#ffffff' : '#333333';
             const fontSize = bHeight * 0.18;
             ctx.font = `bold ${fontSize}px sans-serif`;
@@ -272,12 +279,14 @@
             const processTxt = "工種: " + (document.getElementById('inputProcess').value || '-');
             const dateTxt = "日付: " + document.getElementById('prev-date').innerText;
             
-            ctx.fillText(siteTxt, bX + (20*scaleX), bY + fontSize * 1.5 + (10*scaleY));
-            ctx.fillText(processTxt, bX + (20*scaleX), bY + fontSize * 3.0 + (10*scaleY));
-            ctx.fillText(dateTxt, bX + (20*scaleX), bY + fontSize * 4.5 + (10*scaleY));
+            // テキストの描画位置調整
+            const textX = bX + (20*scaleX);
+            ctx.fillText(siteTxt, textX, bY + fontSize * 1.6 + (10*scaleY));
+            ctx.fillText(processTxt, textX, bY + fontSize * 3.2 + (10*scaleY));
+            ctx.fillText(dateTxt, textX, bY + fontSize * 4.8 + (10*scaleY));
         }
 
-        capturedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        capturedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
         document.getElementById('confirm-img').src = capturedDataUrl;
         document.getElementById('confirm-modal').style.display = 'flex';
     }
@@ -291,11 +300,12 @@
         if (!capturedDataUrl) return;
         const a = document.createElement('a');
         a.href = capturedDataUrl;
-        a.download = `写バ像_${new Date().getTime()}.jpg`;
+        // 保存されるファイル名
+        a.download = `写バ像_${document.getElementById('inputSite').value || '現場'}_${new Date().getTime()}.jpg`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        alert('✅ 端末のカメラロールに保存しました！');
+        alert('✅ 端末に保存しました！');
         cancelPhoto();
     }
 </script>
