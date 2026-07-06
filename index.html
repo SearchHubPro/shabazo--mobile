@@ -9,113 +9,118 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             background: #000; color: #fff; margin: 0; overflow: hidden; touch-action: none;
             width: 100vw; height: 100vh;
-        }
-        
-        /* 💡 1. 歪みのない4:3比率のカメラコンテナ */
-        #camera-container { 
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; 
-            background: #000; z-index: 1; 
             display: flex; justify-content: center; align-items: center;
         }
-        #video { 
-            max-width: 100%; max-height: 100%; object-fit: contain; 
+        
+        /* 💡 完璧な4:3の撮影ファインダー枠（ここ以外は黒帯になるiPhone純正カメラ方式） */
+        #view-finder {
+            position: relative;
+            width: 100vw;
+            height: calc(100vw * 4 / 3); /* 縦持ち時の3:4比率 */
+            max-height: 100vh;
+            max-width: calc(100vh * 3 / 4);
+            background: #111;
+            overflow: hidden;
         }
         
-        /* 撮影ボタン：画面上部中央（スマホ横持ち時に右端になる） */
+        #video { 
+            width: 100%; height: 100%; object-fit: cover; 
+        }
+        
+        /* 💡 プレビューと保存写真を完全同期させるための魔法の回転レイヤー */
+        #overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-90deg);
+            pointer-events: none; /* タッチ無効化 */
+        }
+        
+        /* プレビュー看板：回転レイヤーの「左下」に配置（写真全体の幅の1/3） */
+        #preview-board { 
+            position: absolute; 
+            bottom: 2%; left: 2%; /* 左下に配置 */
+            width: 33.3%; height: 33.3%; /* 写真全体の1/3サイズ */
+            padding: 1%; box-sizing: border-box; 
+            border: 3px solid; border-radius: 2px; box-shadow: 3px 3px 12px rgba(0,0,0,0.8); 
+            display: flex; flex-direction: column; 
+            background: #0f4c3a; color: #fff; border-color: #fff;
+        }
+        .board-white { background: #fff !important; color: #333 !important; border-color: #333 !important; }
+        
+        .preview-table { width: 100%; border-collapse: collapse; margin-bottom: 2%; flex-shrink: 0; }
+        .preview-table td { border: 1px solid rgba(255,255,255,0.6); padding: 2% 4%; font-size: clamp(8px, 1.5vh, 14px); font-weight: bold; }
+        .board-white .preview-table td { border: 1px solid rgba(0,0,0,0.6); }
+        .label-col { width: 25%; text-align: center; }
+        .val-col { text-align: left; }
+        .free-space { flex-grow: 1; display: flex; justify-content: center; align-items: center; font-size: clamp(12px, 2vh, 20px); font-weight: bold; text-align: center;}
+        
+        /* ボタン類（ファインダーの外側に絶対配置） */
         #btn-capture { 
-            position: absolute; top: 30px; left: 50%; transform: translateX(-50%); 
+            position: absolute; top: 40px; left: 50%; transform: translateX(-50%); 
             width: 76px; height: 76px; background: rgba(255,255,255,0.3); 
             border: 4px solid white; border-radius: 50%; z-index: 20; 
             display: flex; justify-content: center; align-items: center; cursor: pointer; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.8); backdrop-filter: blur(2px); 
+            backdrop-filter: blur(2px); 
         }
         #btn-capture .inner-circle { width: 60px; height: 60px; background: white; border-radius: 50%; }
         #btn-capture:active .inner-circle { background: #e53e3e; transform: scale(0.9); }
 
-        /* 設定ボタン：画面右下（スマホ横持ち時に左下になる） */
         #btn-settings { 
-            position: absolute; bottom: 30px; right: 30px; 
+            position: absolute; bottom: 40px; right: 30px; 
             width: 50px; height: 50px; background: rgba(0,0,0,0.6); color: white; 
             border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; font-size: 24px; 
-            z-index: 20; display: flex; justify-content: center; align-items: center; 
-            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); backdrop-filter: blur(4px); 
+            z-index: 20; display: flex; justify-content: center; align-items: center; cursor: pointer; 
         }
         
-        /* プレビュー看板：スマホ縦持ち時に画面左端（横持ち時に左下）に配置 */
-        #preview-board { 
-            position: absolute; top: 50%; left: 20px; 
-            width: 300px; /* プレビュー用のサイズ */
-            padding: 8px; box-sizing: border-box; 
-            border: 3px solid; border-radius: 2px; box-shadow: 3px 3px 12px rgba(0,0,0,0.8); 
-            z-index: 10; display: flex; flex-direction: column; 
-            transform: translateY(-50%) rotate(-90deg); 
-            transform-origin: center center;
-            pointer-events: none; /* ドラッグ廃止・固定配置 */
-        }
-        
-        .board-green { background: #0f4c3a; color: #fff; border-color: #fff; }
-        .board-white { background: #fff; color: #333; border-color: #333; }
-        
-        /* プレビュー看板内のテーブル風デザイン */
-        .preview-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
-        .preview-table td { border: 1px solid rgba(255,255,255,0.6); padding: 4px 8px; font-size: 13px; font-weight: bold; }
-        .board-white .preview-table td { border: 1px solid rgba(0,0,0,0.6); }
-        .label-col { width: 60px; text-align: center; }
-        .val-col { text-align: left; }
-        .free-space { flex-grow: 1; min-height: 80px; display: flex; justify-content: center; align-items: center; font-size: 18px; font-weight: bold; }
-        
+        .top-info { position: absolute; bottom: 45px; left: 30px; z-index: 20; font-size: 12px; font-weight: bold; color: rgba(255,255,255,0.5); transform: rotate(-90deg); transform-origin: left bottom; pointer-events: none; }
+
         /* モーダル群 */
         #settings-modal, #confirm-modal { 
             display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; 
-            background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; justify-content: center; align-items: center; 
-            padding: 20px; box-sizing: border-box; backdrop-filter: blur(5px); 
+            background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; justify-content: center; align-items: center; 
+            padding: 20px; box-sizing: border-box; 
         }
         .modal-content { background: #222; width: 100%; max-width: 400px; border-radius: 16px; padding: 24px; box-sizing: border-box; overflow-y: auto; max-height: 90vh; }
         .modal-content h3 { margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid #4a5568; padding-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 10px; }
-        .modal-content h3 img { width: 24px; height: 24px; border-radius: 6px; }
-        
         label { display: block; font-size: 13px; color: #a0aec0; margin-bottom: 6px; font-weight: bold; }
         input, select { width: 100%; padding: 12px; border: 1px solid #4a5568; border-radius: 8px; font-size: 15px; background: #333; color: #fff; box-sizing: border-box; margin-bottom: 16px; font-weight: bold; }
         .btn-modal { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; background: #3182ce; color: white; display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
-        
         #confirm-img { width: 100%; max-height: 55vh; object-fit: contain; margin-bottom: 10px; border-radius: 8px; border: 2px solid #4a5568; }
         .confirm-actions { display: flex; gap: 12px; width: 100%; max-width: 400px; }
         .btn-half { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        
-        .top-info { position: absolute; bottom: 35px; left: 30px; z-index: 20; font-size: 12px; font-weight: bold; color: rgba(255,255,255,0.5); transform: rotate(-90deg); transform-origin: left bottom; pointer-events: none; }
     </style>
 </head>
 <body>
 
-<div id="camera-container">
+<div id="view-finder">
     <video id="video" autoplay playsinline></video>
     
-    <div id="preview-board" class="board-green">
-        <table class="preview-table" id="pt-table">
-            <tr><td class="label-col">工事名</td><td class="val-col" id="prev-site">-</td></tr>
-            <tr><td class="label-col">工 種</td><td class="val-col" id="prev-process">-</td></tr>
-            <tr id="ptr-loc"><td class="label-col">測 点</td><td class="val-col" id="prev-loc">-</td></tr>
-        </table>
-        <div class="free-space" id="prev-memo"></div>
+    <div id="overlay">
+        <div id="preview-board" class="board-green">
+            <table class="preview-table" id="pt-table">
+                <tr><td class="label-col">工事名</td><td class="val-col" id="prev-site">-</td></tr>
+                <tr><td class="label-col">工 種</td><td class="val-col" id="prev-process">-</td></tr>
+                <tr id="ptr-loc"><td class="label-col">測 点</td><td class="val-col" id="prev-loc">-</td></tr>
+            </table>
+            <div class="free-space" id="prev-memo"></div>
+        </div>
     </div>
 </div>
 
-<div class="top-info"><img src="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png" style="width:14px; vertical-align:middle; margin-right:5px; border-radius:3px;">写バ像 v3.0 (4:3・左下固定)</div>
+<div class="top-info"><img src="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png" style="width:14px; vertical-align:middle; margin-right:5px; border-radius:3px;">写バ像 v4.0 (完全一致レイアウト)</div>
 
 <div id="btn-capture" onclick="takePhoto()"><div class="inner-circle"></div></div>
 <div id="btn-settings" onclick="openSettings()"><i class="fas fa-cog"></i></div>
 
 <div id="settings-modal">
     <div class="modal-content">
-        <h3><img src="https://i.ibb.co/BVC99B8z/Chat-GPT-Image-2026-7-5-23-44-11-1.png" alt="icon"> 撮影設定</h3>
-        
+        <h3>撮影設定</h3>
         <label>黒板レイアウト（テンプレート）</label>
         <select id="boardTemplate" onchange="updatePreview()">
             <option value="T1">① 標準 (工事名・工種・測点)</option>
@@ -123,23 +128,16 @@
             <option value="T3">③ 立会 (工事名・工種・測点・立会人)</option>
             <option value="OFF">④ 黒板なし (実物を使用)</option>
         </select>
-
-        <div style="display: flex; gap: 10px;">
-            <div style="flex: 1;">
-                <label>看板の色</label>
-                <select id="boardColor" onchange="updatePreview()">
-                    <option value="green">深緑 (白字)</option>
-                    <option value="white">白 (黒字)</option>
-                </select>
-            </div>
-        </div>
-
+        <label>看板の色</label>
+        <select id="boardColor" onchange="updatePreview()">
+            <option value="green">深緑 (白字)</option>
+            <option value="white">白 (黒字)</option>
+        </select>
         <label>工事名</label><input type="text" id="inputSite" placeholder="例: ○○邸 新築工事" oninput="updatePreview()">
         <label>工種</label><input type="text" id="inputProcess" placeholder="例: 防水工事" oninput="updatePreview()">
         <label id="labelLoc">測点 / 位置</label><input type="text" id="inputLoc" placeholder="例: 屋上" oninput="updatePreview()">
         <label id="labelSup" style="display:none;">立会人</label><input type="text" id="inputSup" placeholder="例: 現場監督" oninput="updatePreview()" style="display:none;">
         <label>特記事項 (中央に大きく表示)</label><input type="text" id="inputMemo" placeholder="例: トップコート塗布" oninput="updatePreview()">
-        
         <button class="btn-modal" onclick="closeSettings()"><i class="fas fa-check"></i> 撮影に戻る</button>
     </div>
 </div>
@@ -165,23 +163,32 @@
         if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) document.getElementById('ios-notice').style.display = 'block';
         startCamera();
         updatePreview();
+        window.addEventListener('resize', resizeOverlay);
     });
+
+    // 💡 画面サイズに合わせてオーバーレイ（横向き写真の枠）を正確に計算
+    function resizeOverlay() {
+        const vf = document.getElementById('view-finder');
+        const overlay = document.getElementById('overlay');
+        const rect = vf.getBoundingClientRect();
+        overlay.style.width = rect.height + 'px';
+        overlay.style.height = rect.width + 'px';
+    }
 
     async function startCamera() {
         if (currentStream) currentStream.getTracks().forEach(track => track.stop());
         try {
-            // 💡 1. 完璧な4:3比率を要求 (iOS向けにPortrait指定)
             currentStream = await navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: "environment", width: { ideal: 1080 }, height: { ideal: 1440 } }, audio: false 
             });
             video.srcObject = currentStream;
+            video.onloadedmetadata = () => { resizeOverlay(); };
         } catch (err) { alert('カメラの起動に失敗しました。権限を確認してください。'); }
     }
 
     function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
     function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
     
-    // HTMLプレビューと入力項目の動的切り替え
     function updatePreview() {
         const tType = document.getElementById('boardTemplate').value;
         const color = document.getElementById('boardColor').value;
@@ -196,7 +203,6 @@
         const supLabel = document.getElementById('labelSup');
         const supInput = document.getElementById('inputSup');
 
-        // テンプレート別 UI切り替え
         if (tType === 'T1') {
             locRow.style.display = 'table-row'; locRow.cells[0].innerText = '測 点';
             locRow.cells[1].innerText = document.getElementById('inputLoc').value || '-';
@@ -224,34 +230,31 @@
         }
     }
 
-    // 💡 2. 写真の1/3サイズで左下にピタッと合成＆4:3出力
     function takePhoto() {
         const canvas = document.createElement('canvas');
-        canvas.width = 1440; // 最終出力は1440x1080 (4:3)
+        canvas.width = 1440; 
         canvas.height = 1080;
         const ctx = canvas.getContext('2d');
         
-        // 縦持ち映像(1080x1440)を右に90度倒して横型(1440x1080)にフィット
         if (video.videoWidth < video.videoHeight) {
             ctx.translate(canvas.width / 2, canvas.height / 2);
             ctx.rotate(90 * Math.PI / 180);
             ctx.drawImage(video, -canvas.height / 2, -canvas.width / 2, canvas.height, canvas.width);
-            ctx.setTransform(1, 0, 0, 1, 0, 0); // 回転リセット
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
         } else {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         }
 
         const tType = document.getElementById('boardTemplate').value;
         
-        // 💡 2. サイズと位置の指定 (写真幅1440の約1/3 = 幅480、左下に配置)
         if (tType !== 'OFF') {
+            // キャンバス上でも写真の1/3サイズで左下に完全固定
             const bW = 480; 
             const bH = 360; 
-            const bX = 20; 
-            const bY = canvas.height - bH - 20; // 下から20px
+            const bX = canvas.width * 0.02; // 左から2%
+            const bY = canvas.height - bH - (canvas.height * 0.02); // 下から2%
             const isGreen = document.getElementById('boardColor').value === 'green';
 
-            // 背景と外枠
             ctx.fillStyle = isGreen ? '#0f4c3a' : '#ffffff';
             ctx.fillRect(bX, bY, bW, bH);
             ctx.strokeStyle = isGreen ? '#ffffff' : '#333333';
@@ -267,7 +270,6 @@
             const loc = document.getElementById('inputLoc').value || '';
             const sup = document.getElementById('inputSup').value || '';
             const memo = document.getElementById('inputMemo').value || '';
-            
             const today = new Date();
             const dateStr = today.getFullYear() + '年' + (today.getMonth()+1) + '月' + today.getDate() + '日';
 
@@ -275,12 +277,10 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // 💡 3. テンプレート別の描画ロジック (表の罫線と文字)
             const rowH = 46;
-            const colW = 100;
+            const colW = 120; // ラベル列の幅
 
             if (tType === 'T1' || tType === 'T2') {
-                // 3行レイアウト
                 for(let i=0; i<3; i++) {
                     ctx.strokeRect(bX + 6, bY + 6 + (i*rowH), colW, rowH);
                     ctx.strokeRect(bX + 6 + colW, bY + 6 + (i*rowH), bW - 12 - colW, rowH);
@@ -299,16 +299,12 @@
                     ctx.textAlign = 'center'; ctx.fillText('撮影日', bX + 6 + colW/2, bY + 6 + rowH*2.5);
                     ctx.textAlign = 'left'; ctx.fillText(dateStr, bX + 16 + colW, bY + 6 + rowH*2.5);
                 }
-                
-                // メモ (下部の余白)
                 if (memo) {
                     ctx.font = 'bold 28px sans-serif';
                     ctx.textAlign = 'center';
                     ctx.fillText(memo, bX + bW/2, bY + 6 + rowH*3 + ((bH - 12 - rowH*3) / 2));
                 }
-            } 
-            else if (tType === 'T3') {
-                // 4行レイアウト
+            } else if (tType === 'T3') {
                 for(let i=0; i<4; i++) {
                     ctx.strokeRect(bX + 6, bY + 6 + (i*rowH), colW, rowH);
                     ctx.strokeRect(bX + 6 + colW, bY + 6 + (i*rowH), bW - 12 - colW, rowH);
